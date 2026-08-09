@@ -56,7 +56,8 @@ class PersistentNotificationPlugin @Inject constructor(
     private val iconsProvider: IconsProvider,
     private val glucoseStatusProvider: GlucoseStatusProvider,
     private val config: Config,
-    private val decimalFormatter: DecimalFormatter
+    private val decimalFormatter: DecimalFormatter,
+    private val notificationGraphDrawer: NotificationGraphDrawer
 ) : PluginBase(
     PluginDescription()
         .mainType(PluginType.GENERAL)
@@ -79,6 +80,16 @@ class PersistentNotificationPlugin @Inject constructor(
     // End Android auto
 
     private val disposable = CompositeDisposable()
+
+    // ---- Community patch: réglages du graphique dans la notification --------
+    // Passer à false pour revenir au comportement d'origine (aucun graphique).
+    private val SHOW_GRAPH_IN_NOTIFICATION = true
+
+    // Affiche le contenu de la notification (glycémie, graphique déplié) sur
+    // l'écran verrouillé. Passer à false pour le masquer quand le téléphone
+    // est verrouillé.
+    private val LOCKSCREEN_VISIBLE = true
+    // -------------------------------------------------------------------------
 
     override fun onStart() {
         super.onStart()
@@ -220,6 +231,31 @@ class PersistentNotificationPlugin @Inject constructor(
         }
         /// End Android Auto
         builder.setContentIntent(notificationHolder.openAppIntent(context))
+
+        // ---- Community patch: graphique des dernières heures ----------------
+        // La vue repliée reste strictement identique (titre / texte / sous-texte
+        // ci-dessus). BigPictureStyle n'ajoute le graphique qu'à l'expansion.
+        if (SHOW_GRAPH_IN_NOTIFICATION) {
+            try {
+                notificationGraphDrawer.draw()?.let { graph ->
+                    builder.setStyle(
+                        NotificationCompat.BigPictureStyle()
+                            .bigPicture(graph)
+                            .setBigContentTitle(line1)
+                            .setSummaryText(line2 ?: "")
+                    )
+                }
+            } catch (e: Exception) {
+                // Un souci de rendu ne doit jamais empêcher la notification de s'afficher
+                aapsLogger.error("Unhandled exception drawing notification graph", e)
+            }
+        }
+        // Rend le contenu (et donc le graphique déplié) visible sur l'écran
+        // verrouillé. Mettre VISIBILITY_PRIVATE pour masquer la glycémie quand
+        // le téléphone est verrouillé.
+        if (LOCKSCREEN_VISIBLE) builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        // ---- Fin community patch --------------------------------------------
+
         val mNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notification = builder.build()
         mNotificationManager.notify(notificationHolder.notificationID, notification)
