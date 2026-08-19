@@ -21,6 +21,7 @@ import dagger.android.ContributesAndroidInjector
         SkinsModule::class,
         ActionsModule::class,
         OverviewModule::class,
+        StatsSummaryModule::class,
     ]
 )
 

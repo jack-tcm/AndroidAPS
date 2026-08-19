@@ -25,6 +25,7 @@ import app.aaps.plugins.main.general.food.FoodPlugin
 import app.aaps.plugins.main.general.overview.OverviewPlugin
 import app.aaps.plugins.main.general.persistentNotification.PersistentNotificationPlugin
 import app.aaps.plugins.main.general.smsCommunicator.SmsCommunicatorPlugin
+import app.aaps.plugins.main.general.statsSummary.StatsSummaryPlugin
 import app.aaps.plugins.main.general.themes.ThemeSwitcherPlugin
 import app.aaps.plugins.main.iob.iobCobCalculator.IobCobCalculatorPlugin
 import app.aaps.plugins.main.profile.ProfilePlugin
@@ -486,6 +487,12 @@ abstract class PluginsListModule {
     @IntoMap
     @IntKey(610)
     abstract fun bindAvgSmoothingPlugin(plugin: AvgSmoothingPlugin): PluginBase
+
+    @Binds
+    @AllConfigs
+    @IntoMap
+    @IntKey(620)
+    abstract fun bindStatsSummaryPlugin(plugin: StatsSummaryPlugin): PluginBase
 
     @Qualifier
     annotation class AllConfigs

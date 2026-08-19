@@ -7,8 +7,9 @@ import android.graphics.Paint
 import android.graphics.Path
 import app.aaps.core.data.model.GV
 import app.aaps.core.interfaces.db.PersistenceLayer
-import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileUtil
+import app.aaps.core.keys.UnitDoubleKey
+import app.aaps.core.keys.interfaces.Preferences
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.max
@@ -25,7 +26,7 @@ import kotlin.math.min
 @Singleton
 class NotificationGraphDrawer @Inject constructor(
     private val persistenceLayer: PersistenceLayer,
-    private val profileFunction: ProfileFunction,
+    private val preferences: Preferences,
     private val profileUtil: ProfileUtil
 ) {
 
@@ -43,12 +44,17 @@ class NotificationGraphDrawer @Inject constructor(
         private const val PADDING_TOP = 24f
         private const val PADDING_BOTTOM = 40f  // place pour les libellés horaires
 
-        private const val COLOR_IN_RANGE = 0xFF4CAF50.toInt()
-        private const val COLOR_HIGH = 0xFFFFB300.toInt()
-        private const val COLOR_LOW = 0xFFE53935.toInt()
+        // Couleurs alignées sur l'écran principal d'AAPS
+        private const val COLOR_IN_RANGE = 0xFF00E676.toInt()  // vert vif, comme les points en cible
+        private const val COLOR_HIGH = 0xFFFFEB3B.toInt()      // jaune, au-dessus du repère haut
+        private const val COLOR_LOW = 0xFFFF5252.toInt()       // rouge, sous le repère bas
         private const val COLOR_GRID = 0x40FFFFFF
         private const val COLOR_LABEL = 0xB0FFFFFF.toInt()
-        private const val COLOR_RANGE_BAND = 0x1A4CAF50
+
+        // Bande de fond verte entre les deux repères, comme sur l'écran principal.
+        // Le 0x33 de tête est l'opacité (~20%) : monter à 0x4D pour plus marqué,
+        // descendre à 0x1A pour plus discret.
+        private const val COLOR_RANGE_BAND = 0x332E7D32
     }
 
     /**
@@ -72,13 +78,16 @@ class NotificationGraphDrawer @Inject constructor(
         var minV = values.min()
         var maxV = values.max()
 
-        val profile = profileFunction.getProfile()
-        val lowLine = profile?.let { profileUtil.fromMgdlToUnits(it.getTargetLowMgdl()) }
-        val highLine = profile?.let { profileUtil.fromMgdlToUnits(it.getTargetHighMgdl()) }
+        // Repères bas/haut du graphique, identiques à ceux de l'écran principal
+        // d'AAPS (Préférences → Overview → "low mark" / "high mark", 72 et 180
+        // par défaut). Preferences.get(UnitDoublePreferenceKey) renvoie déjà la
+        // valeur convertie dans l'unité d'affichage de l'utilisateur.
+        val lowLine: Double = preferences.get(UnitDoubleKey.OverviewLowMark)
+        val highLine: Double = preferences.get(UnitDoubleKey.OverviewHighMark)
 
-        // On élargit pour englober la plage cible, puis on ajoute une marge
-        lowLine?.let { minV = min(minV, it) }
-        highLine?.let { maxV = max(maxV, it) }
+        // On élargit pour englober toute la bande cible, puis on ajoute une marge
+        minV = min(minV, lowLine)
+        maxV = max(maxV, highLine)
         val span = (maxV - minV).takeIf { it > 0.0 } ?: 1.0
         minV -= span * 0.12
         maxV += span * 0.12
@@ -102,26 +111,24 @@ class NotificationGraphDrawer @Inject constructor(
 
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-        // --- Bande de plage cible ---
-        if (lowLine != null && highLine != null) {
-            paint.style = Paint.Style.FILL
-            paint.color = COLOR_RANGE_BAND
-            canvas.drawRect(plotLeft, yOf(highLine), plotRight, yOf(lowLine), paint)
+        // --- Bande de fond entre le repère bas et le repère haut ---
+        paint.style = Paint.Style.FILL
+        paint.color = COLOR_RANGE_BAND
+        canvas.drawRect(plotLeft, yOf(highLine), plotRight, yOf(lowLine), paint)
 
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 2f
-            paint.color = COLOR_GRID
-            canvas.drawLine(plotLeft, yOf(lowLine), plotRight, yOf(lowLine), paint)
-            canvas.drawLine(plotLeft, yOf(highLine), plotRight, yOf(highLine), paint)
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 2f
+        paint.color = COLOR_GRID
+        canvas.drawLine(plotLeft, yOf(lowLine), plotRight, yOf(lowLine), paint)
+        canvas.drawLine(plotLeft, yOf(highLine), plotRight, yOf(highLine), paint)
 
-            // Libellés des bornes de plage, à droite
-            paint.style = Paint.Style.FILL
-            paint.color = COLOR_LABEL
-            paint.textSize = 26f
-            paint.textAlign = Paint.Align.LEFT
-            canvas.drawText(formatValue(highLine), plotRight + 10f, yOf(highLine) + 9f, paint)
-            canvas.drawText(formatValue(lowLine), plotRight + 10f, yOf(lowLine) + 9f, paint)
-        }
+        // Libellés des deux repères, à droite (72 et 180 par défaut)
+        paint.style = Paint.Style.FILL
+        paint.color = COLOR_LABEL
+        paint.textSize = 26f
+        paint.textAlign = Paint.Align.LEFT
+        canvas.drawText(formatValue(highLine), plotRight + 10f, yOf(highLine) + 9f, paint)
+        canvas.drawText(formatValue(lowLine), plotRight + 10f, yOf(lowLine) + 9f, paint)
 
         // --- Repères horaires verticaux (une ligne par heure) ---
         paint.style = Paint.Style.STROKE
@@ -150,7 +157,9 @@ class NotificationGraphDrawer @Inject constructor(
         paint.strokeWidth = 5f
         paint.strokeCap = Paint.Cap.ROUND
         paint.strokeJoin = Paint.Join.ROUND
-        paint.color = COLOR_IN_RANGE
+        // Ligne de liaison neutre : ce sont les points qui portent la couleur,
+        // comme sur l'écran principal d'AAPS.
+        paint.color = 0x66FFFFFF
         val path = Path()
         readings.forEachIndexed { i, gv ->
             val x = xOf(gv.timestamp)
@@ -164,8 +173,8 @@ class NotificationGraphDrawer @Inject constructor(
         readings.forEach { gv ->
             val v = profileUtil.fromMgdlToUnits(gv.value)
             paint.color = when {
-                highLine != null && v > highLine -> COLOR_HIGH
-                lowLine != null && v < lowLine   -> COLOR_LOW
+                v > highLine -> COLOR_HIGH
+                v < lowLine  -> COLOR_LOW
                 else                             -> COLOR_IN_RANGE
             }
             canvas.drawCircle(xOf(gv.timestamp), yOf(v), 5f, paint)
@@ -177,8 +186,8 @@ class NotificationGraphDrawer @Inject constructor(
             val x = xOf(last.timestamp)
             val y = yOf(v)
             paint.color = when {
-                highLine != null && v > highLine -> COLOR_HIGH
-                lowLine != null && v < lowLine   -> COLOR_LOW
+                v > highLine -> COLOR_HIGH
+                v < lowLine  -> COLOR_LOW
                 else                             -> COLOR_IN_RANGE
             }
             canvas.drawCircle(x, y, 11f, paint)

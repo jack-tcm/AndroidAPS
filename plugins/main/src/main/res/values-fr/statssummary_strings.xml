@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="statssummary">Statistiques</string>
+    <string name="statssummary_short">STATS</string>
+    <string name="description_statssummary">Résumé des statistiques de glycémie et d\'insuline sur 24 heures, 7 jours ou 30 jours.</string>
+
+    <string name="statssummary_period_day">24 h</string>
+    <string name="statssummary_period_week">7 j</string>
+    <string name="statssummary_period_month">30 j</string>
+
+    <string name="statssummary_previous">Période précédente</string>
+    <string name="statssummary_next">Période suivante</string>
+    <string name="statssummary_today">Aujourd\'hui</string>
+    <string name="statssummary_current_period">Période en cours</string>
+    <string name="statssummary_until">%1$s · jusqu\'à %2$s</string>
+    <string name="statssummary_range">%1$s – %2$s</string>
+
+    <string name="statssummary_sensor">CAPTEUR</string>
+    <string name="statssummary_tir_low">%1$d %% bas</string>
+    <string name="statssummary_tir_inrange">%1$d %% en cible</string>
+    <string name="statssummary_tir_high">%1$d %% haut</string>
+    <string name="statssummary_coverage">%1$d mesures · %2$d %% de couverture</string>
+    <string name="statssummary_average">Moyenne</string>
+    <string name="statssummary_a1c">HbA1c estimée</string>
+
+    <string name="statssummary_insulin_carbs">INSULINE ET GLUCIDES</string>
+    <string name="statssummary_insulin_total">Total insuline</string>
+    <string name="statssummary_insulin_per_day">Insuline par jour</string>
+    <string name="statssummary_carbs_total">Glucides</string>
+    <string name="statssummary_carbs_per_day">Glucides par jour</string>
+    <string name="statssummary_basal">Basal</string>
+    <string name="statssummary_basal_share">Basal %1$d %% · %2$.1f U</string>
+    <string name="statssummary_bolus_share">Bolus %1$d %% · %2$.1f U</string>
+</resources>

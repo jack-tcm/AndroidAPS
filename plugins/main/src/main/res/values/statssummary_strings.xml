@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="statssummary">Stats</string>
+    <string name="statssummary_short">STATS</string>
+    <string name="description_statssummary">Summary of glucose and insulin statistics over 24 hours, 7 days or 30 days.</string>
+
+    <string name="statssummary_period_day">24 h</string>
+    <string name="statssummary_period_week">7 d</string>
+    <string name="statssummary_period_month">30 d</string>
+
+    <string name="statssummary_previous">Previous period</string>
+    <string name="statssummary_next">Next period</string>
+    <string name="statssummary_today">Today</string>
+    <string name="statssummary_current_period">Current period</string>
+    <string name="statssummary_until">%1$s · until %2$s</string>
+    <string name="statssummary_range">%1$s – %2$s</string>
+
+    <string name="statssummary_sensor">SENSOR</string>
+    <string name="statssummary_tir_low">%1$d %% low</string>
+    <string name="statssummary_tir_inrange">%1$d %% in range</string>
+    <string name="statssummary_tir_high">%1$d %% high</string>
+    <string name="statssummary_coverage">%1$d readings · %2$d %% coverage</string>
+    <string name="statssummary_average">Average</string>
+    <string name="statssummary_a1c">Estimated HbA1c</string>
+
+    <string name="statssummary_insulin_carbs">INSULIN AND CARBS</string>
+    <string name="statssummary_insulin_total">Total insulin</string>
+    <string name="statssummary_insulin_per_day">Insulin per day</string>
+    <string name="statssummary_carbs_total">Carbs</string>
+    <string name="statssummary_carbs_per_day">Carbs per day</string>
+    <string name="statssummary_basal">Basal</string>
+    <string name="statssummary_basal_share">Basal %1$d %% · %2$.1f U</string>
+    <string name="statssummary_bolus_share">Bolus %1$d %% · %2$.1f U</string>
+</resources>
