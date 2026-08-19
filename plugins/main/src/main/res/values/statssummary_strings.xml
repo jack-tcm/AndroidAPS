@@ -31,4 +31,19 @@
     <string name="statssummary_basal">Basal</string>
     <string name="statssummary_basal_share">Basal %1$d %% · %2$.1f U</string>
     <string name="statssummary_bolus_share">Bolus %1$d %% · %2$.1f U</string>
+
+    <string name="statssummary_chart_day">GLUCOSE</string>
+    <string name="statssummary_chart_day_sub">All readings for the selected day</string>
+    <string name="statssummary_chart_profile">AVERAGE GLUCOSE PROFILE</string>
+    <string name="statssummary_chart_profile_sub">Median per hour · shaded area = 25–75 %% of values</string>
+
+    <string name="statssummary_slots_title">TIME IN RANGE BY SLOT</string>
+    <string name="statssummary_slot_label">%1$02d–%2$02d h</string>
+    <string name="statssummary_percent">%1$d %%</string>
+    <string name="statssummary_slot1_start">Slot 1 start hour</string>
+    <string name="statssummary_slot2_start">Slot 2 start hour</string>
+    <string name="statssummary_slot3_start">Slot 3 start hour</string>
+    <string name="statssummary_slot4_start">Slot 4 start hour</string>
+    <string name="statssummary_slot_start_summary">Hour of day (0–23). Each slot runs until the next one starts.</string>
+    <string name="statssummary_coverage_readings_only">%1$d readings</string>
 </resources>

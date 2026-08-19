@@ -72,4 +72,11 @@ enum class IntKey(
     NsClientUrgentAlarmStaleData("ns_alarm_urgent_stale_data_value", 31, 30, 180),
 
     SiteRotationUserProfile("site_rotation_user_profile", 0, 0, 2),
+
+    // Community patch — bornes des tranches horaires de l'onglet Stats.
+    // Quatre tranches, définies par leurs heures de début (0-23).
+    StatsSummarySlot1Start("statssummary_slot1_start", 0, 0, 23),
+    StatsSummarySlot2Start("statssummary_slot2_start", 6, 0, 23),
+    StatsSummarySlot3Start("statssummary_slot3_start", 12, 0, 23),
+    StatsSummarySlot4Start("statssummary_slot4_start", 18, 0, 23),
 }

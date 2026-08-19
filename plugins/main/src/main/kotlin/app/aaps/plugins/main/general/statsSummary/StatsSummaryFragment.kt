@@ -8,9 +8,9 @@ import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
-import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.plugins.main.R
 import app.aaps.plugins.main.databinding.StatssummaryFragmentBinding
+import app.aaps.plugins.main.databinding.StatssummarySlotRowBinding
 import com.google.android.material.tabs.TabLayout
 import dagger.android.support.DaggerFragment
 import io.reactivex.rxjava3.core.Single
@@ -21,7 +21,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
-import kotlin.math.roundToInt
 
 /**
  * Community patch — écran de l'onglet Stats.
@@ -36,7 +35,6 @@ class StatsSummaryFragment : DaggerFragment() {
     @Inject lateinit var aapsLogger: AAPSLogger
     @Inject lateinit var rh: ResourceHelper
     @Inject lateinit var profileUtil: ProfileUtil
-    @Inject lateinit var dateUtil: DateUtil
 
     private val disposable = CompositeDisposable()
 
@@ -128,11 +126,9 @@ class StatsSummaryFragment : DaggerFragment() {
         binding.statssummaryTirInrange.setTextColor(TirBarView.COLOR_IN_RANGE)
         binding.statssummaryTirHigh.setTextColor(TirBarView.COLOR_HIGH)
 
-        // Une lecture toutes les 5 min ≈ 288 par jour : donne une idée de la
-        // fiabilité du TIR affiché (un TIR sur 30 % de données ne vaut rien).
-        val expected = (r.endTime - r.startTime) / 300_000.0
-        val coverage = if (expected > 0) (r.readingCount / expected * 100).roundToInt().coerceIn(0, 100) else 0
-        binding.statssummaryCoverage.text = rh.gs(R.string.statssummary_coverage, r.readingCount, coverage)
+        binding.statssummaryCoverage.text = r.coveragePercent?.let {
+            rh.gs(R.string.statssummary_coverage, r.readingCount, it)
+        } ?: rh.gs(R.string.statssummary_coverage_readings_only, r.readingCount)
 
         binding.statssummaryAverage.text = r.average?.let { formatGlucose(it) } ?: PLACEHOLDER
         binding.statssummaryA1c.text = r.estimatedA1cPercent?.let { String.format(Locale.getDefault(), "%.1f %%", it) } ?: PLACEHOLDER
@@ -161,6 +157,44 @@ class StatsSummaryFragment : DaggerFragment() {
         }
         binding.statssummaryBasalLabel.setTextColor(SplitBarView.COLOR_BASAL)
         binding.statssummaryBolusLabel.setTextColor(SplitBarView.COLOR_BOLUS)
+
+        displayChart(r)
+        displaySlots(r)
+    }
+
+    private fun displayChart(r: StatsSummaryCalculator.Result) {
+        val decimals = if (profileUtil.units == app.aaps.core.data.model.GlucoseUnit.MMOL) 1 else 0
+        binding.statssummaryChart.setRange(r.lowMark, r.highMark, decimals)
+
+        if (r.period == StatsSummaryCalculator.Period.DAY) {
+            binding.statssummaryChartTitle.text = rh.gs(R.string.statssummary_chart_day)
+            binding.statssummaryChartSubtitle.text = rh.gs(R.string.statssummary_chart_day_sub)
+            binding.statssummaryChart.showRaw(r.rawPoints, r.startTime, r.endTime)
+        } else {
+            binding.statssummaryChartTitle.text = rh.gs(R.string.statssummary_chart_profile)
+            binding.statssummaryChartSubtitle.text = rh.gs(R.string.statssummary_chart_profile_sub)
+            binding.statssummaryChart.showHourly(r.hourlyProfile)
+        }
+    }
+
+    private fun displaySlots(r: StatsSummaryCalculator.Result) {
+        val container = binding.statssummarySlotsContainer
+        container.removeAllViews()
+        val inflater = LayoutInflater.from(container.context)
+
+        r.slots.forEach { slot ->
+            val row = StatssummarySlotRowBinding.inflate(inflater, container, false)
+            row.statssummarySlotLabel.text =
+                rh.gs(R.string.statssummary_slot_label, slot.startHour, slot.endHour)
+            if (slot.hasData) {
+                row.statssummarySlotBar.setValues(slot.percentLow, slot.percentInRange, slot.percentHigh)
+                row.statssummarySlotValue.text = rh.gs(R.string.statssummary_percent, slot.percentInRange)
+            } else {
+                row.statssummarySlotBar.setValues(0, 0, 0)
+                row.statssummarySlotValue.text = PLACEHOLDER
+            }
+            container.addView(row.root)
+        }
     }
 
     private fun formatGlucose(value: Double): String =

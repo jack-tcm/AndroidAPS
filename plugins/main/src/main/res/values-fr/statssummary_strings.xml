@@ -31,4 +31,19 @@
     <string name="statssummary_basal">Basal</string>
     <string name="statssummary_basal_share">Basal %1$d %% · %2$.1f U</string>
     <string name="statssummary_bolus_share">Bolus %1$d %% · %2$.1f U</string>
+
+    <string name="statssummary_chart_day">GLYCÉMIE</string>
+    <string name="statssummary_chart_day_sub">Toutes les valeurs du jour sélectionné</string>
+    <string name="statssummary_chart_profile">PROFIL GLYCÉMIQUE MOYEN</string>
+    <string name="statssummary_chart_profile_sub">Médiane par heure · zone = 25–75 %% des valeurs</string>
+
+    <string name="statssummary_slots_title">TEMPS EN CIBLE PAR TRANCHE</string>
+    <string name="statssummary_slot_label">%1$02d–%2$02d h</string>
+    <string name="statssummary_percent">%1$d %%</string>
+    <string name="statssummary_slot1_start">Heure de début tranche 1</string>
+    <string name="statssummary_slot2_start">Heure de début tranche 2</string>
+    <string name="statssummary_slot3_start">Heure de début tranche 3</string>
+    <string name="statssummary_slot4_start">Heure de début tranche 4</string>
+    <string name="statssummary_slot_start_summary">Heure de la journée (0–23). Chaque tranche court jusqu\'au début de la suivante.</string>
+    <string name="statssummary_coverage_readings_only">%1$d mesures</string>
 </resources>
