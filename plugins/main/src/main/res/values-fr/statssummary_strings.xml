@@ -46,4 +46,6 @@
     <string name="statssummary_slot4_start">Heure de début tranche 4</string>
     <string name="statssummary_slot_start_summary">Heure de la journée (0–23). Chaque tranche court jusqu\'au début de la suivante.</string>
     <string name="statssummary_coverage_readings_only">%1$d mesures</string>
+    <string name="statssummary_smoothing">Lissage du graphique (minutes)</string>
+    <string name="statssummary_smoothing_summary">Regroupe les mesures par tranches de N minutes et garde la médiane de chacune. 0 désactive le lissage. Affecte uniquement le graphique 24 h, pas les statistiques.</string>
 </resources>

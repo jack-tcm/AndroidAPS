@@ -46,4 +46,6 @@
     <string name="statssummary_slot4_start">Slot 4 start hour</string>
     <string name="statssummary_slot_start_summary">Hour of day (0–23). Each slot runs until the next one starts.</string>
     <string name="statssummary_coverage_readings_only">%1$d readings</string>
+    <string name="statssummary_smoothing">Chart smoothing (minutes)</string>
+    <string name="statssummary_smoothing_summary">Groups readings into slices of N minutes and keeps the median of each. 0 disables smoothing. Affects the 24 h chart only, not the statistics.</string>
 </resources>

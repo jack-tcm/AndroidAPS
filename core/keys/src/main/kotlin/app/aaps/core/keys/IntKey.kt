@@ -79,4 +79,8 @@ enum class IntKey(
     StatsSummarySlot2Start("statssummary_slot2_start", 6, 0, 23),
     StatsSummarySlot3Start("statssummary_slot3_start", 12, 0, 23),
     StatsSummarySlot4Start("statssummary_slot4_start", 18, 0, 23),
+
+    // Lissage du graphique 24 h : largeur des tranches en minutes.
+    // 0 = aucun lissage (toutes les valeurs brutes).
+    StatsSummarySmoothingMinutes("statssummary_smoothing_minutes", 5, 0, 30),
 }

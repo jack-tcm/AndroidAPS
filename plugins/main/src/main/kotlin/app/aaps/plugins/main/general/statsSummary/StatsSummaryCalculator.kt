@@ -203,7 +203,7 @@ class StatsSummaryCalculator @Inject constructor(
         // --- Graphique : valeurs brutes en 24 h, profil moyen au-delà ---
         val rawPoints =
             if (period == Period.DAY)
-                readings.map { RawPoint(it.timestamp, profileUtil.fromMgdlToUnits(it.value)) }
+                smooth(readings.map { RawPoint(it.timestamp, profileUtil.fromMgdlToUnits(it.value)) })
             else emptyList()
 
         val hourlyProfile =
@@ -236,6 +236,38 @@ class StatsSummaryCalculator @Inject constructor(
             hourlyProfile = hourlyProfile,
             slots = slots
         )
+    }
+
+    /**
+     * Lissage du graphique 24 h : regroupe les valeurs par tranches de N
+     * minutes et ne garde que la médiane de chaque tranche.
+     *
+     * Combine sous-échantillonnage (rendu identique quelle que soit la
+     * cadence de la source — 1 min avec Juggluco, 5 min avec un Dexcom) et
+     * médiane plutôt que moyenne, pour effacer le bruit de mesure sans
+     * écraser les vrais pics.
+     *
+     * N = 0 désactive le lissage et renvoie toutes les valeurs brutes.
+     */
+    private fun smooth(points: List<RawPoint>): List<RawPoint> {
+        val minutes = preferences.get(IntKey.StatsSummarySmoothingMinutes)
+        if (minutes <= 0 || points.size < 3) return points
+
+        val bucketMs = minutes * 60_000L
+        val lastTimestamp = points.last().timestamp
+        return points
+            .groupBy { it.timestamp / bucketMs }
+            .toSortedMap()
+            .map { (bucket, values) ->
+                val sorted = values.map { it.value }.sorted()
+                RawPoint(
+                    // Milieu de la tranche : évite que la courbe se décale.
+                    // Plafonné à la dernière mesure réelle, pour que la
+                    // tranche en cours (incomplète) ne déborde pas à droite.
+                    timestamp = (bucket * bucketMs + bucketMs / 2).coerceAtMost(lastTimestamp),
+                    value = percentile(sorted, 0.50)
+                )
+            }
     }
 
     /**

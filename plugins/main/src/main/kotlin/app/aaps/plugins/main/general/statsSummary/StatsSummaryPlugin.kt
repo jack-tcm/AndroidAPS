@@ -76,6 +76,13 @@ class StatsSummaryPlugin @Inject constructor(
                     summary = R.string.statssummary_slot_start_summary
                 )
             )
+            addPreference(
+                AdaptiveIntPreference(
+                    ctx = context, intKey = IntKey.StatsSummarySmoothingMinutes,
+                    title = R.string.statssummary_smoothing,
+                    summary = R.string.statssummary_smoothing_summary
+                )
+            )
         }
     }
 }
