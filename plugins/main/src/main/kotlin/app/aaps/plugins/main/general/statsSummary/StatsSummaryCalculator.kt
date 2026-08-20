@@ -71,22 +71,6 @@ class StatsSummaryCalculator @Inject constructor(
     /** Une valeur brute pour le graphique du mode 24 h. */
     data class RawPoint(val timestamp: Long, val value: Double)
 
-    // --- Cache ---------------------------------------------------------
-    // Recalculer 30 jours coûte cher (des dizaines de milliers de mesures) :
-    // on garde les derniers résultats pour que revenir sur une période déjà
-    // consultée soit instantané.
-    //
-    // Une période passée est figée, on la garde toute la session. La période
-    // en cours continue de recevoir des mesures, on la réévalue donc au bout
-    // d'une minute.
-    private class CacheEntry(val result: Result, val computedAt: Long)
-
-    private val cache = object : LinkedHashMap<String, CacheEntry>(8, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CacheEntry>) = size > 12
-    }
-
-    private val currentPeriodTtlMs = 60_000L
-
     /** Temps en cible sur une tranche horaire. */
     data class SlotStat(
         val startHour: Int,
@@ -173,37 +157,6 @@ class StatsSummaryCalculator @Inject constructor(
     }
 
     fun calculate(period: Period, offset: Int): Result {
-        // Les réglages d'affichage font partie de la clé : changer le lissage
-        // ou une borne de tranche produit naturellement un défaut de cache,
-        // sans avoir à le vider explicitement.
-        val settings = listOf(
-            preferences.get(IntKey.StatsSummarySmoothingMinutes),
-            preferences.get(IntKey.StatsSummarySlot1Start),
-            preferences.get(IntKey.StatsSummarySlot2Start),
-            preferences.get(IntKey.StatsSummarySlot3Start),
-            preferences.get(IntKey.StatsSummarySlot4Start)
-        ).joinToString(",")
-        val marks = "${preferences.get(UnitDoubleKey.OverviewLowMark)}/${preferences.get(UnitDoubleKey.OverviewHighMark)}"
-        val key = "${period.name}:$offset:$settings:$marks"
-        synchronized(cache) {
-            cache[key]?.let { entry ->
-                val fresh = offset > 0 || System.currentTimeMillis() - entry.computedAt < currentPeriodTtlMs
-                if (fresh) return entry.result
-            }
-        }
-        val result = compute(period, offset)
-        synchronized(cache) {
-            cache[key] = CacheEntry(result, System.currentTimeMillis())
-        }
-        return result
-    }
-
-    /** Vide le cache — à appeler si les réglages d'affichage changent. */
-    fun invalidateCache() {
-        synchronized(cache) { cache.clear() }
-    }
-
-    private fun compute(period: Period, offset: Int): Result {
         // Cache : revenir sur une période déjà consultée est instantané.
         // La clé inclut les préférences qui changent le résultat, pour que
         // modifier une borne ou le lissage invalide naturellement l'entrée.
