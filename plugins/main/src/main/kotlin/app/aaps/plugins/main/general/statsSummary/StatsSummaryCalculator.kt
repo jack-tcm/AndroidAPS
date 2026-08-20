@@ -343,9 +343,13 @@ class StatsSummaryCalculator @Inject constructor(
         // Sous-échantillonnage : on ne retient qu'une valeur toutes les
         // 5 minutes. Sur 30 jours à une mesure par minute, ça fait passer de
         // ~43 000 à ~8 600 points, pour une médiane horaire identique.
-        var lastKept = Long.MIN_VALUE
+        //
+        // lastKept est nullable et non Long.MIN_VALUE : la soustraction
+        // déborderait et rejetterait toutes les valeurs.
+        var lastKept: Long? = null
         readings.forEach { gv ->
-            if (gv.timestamp - lastKept < PROFILE_MIN_INTERVAL_MS) return@forEach
+            val previous = lastKept
+            if (previous != null && gv.timestamp - previous < PROFILE_MIN_INTERVAL_MS) return@forEach
             lastKept = gv.timestamp
             cal.timeInMillis = gv.timestamp
             buckets[cal.get(Calendar.HOUR_OF_DAY)].add(profileUtil.fromMgdlToUnits(gv.value))
