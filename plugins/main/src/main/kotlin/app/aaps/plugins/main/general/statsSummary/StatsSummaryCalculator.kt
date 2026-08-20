@@ -26,6 +26,33 @@ class StatsSummaryCalculator @Inject constructor(
     private val profileUtil: ProfileUtil
 ) {
 
+    private data class CacheKey(
+        val period: Period,
+        val offset: Int,
+        /** Inclus pour qu'un passage de minuit invalide les entrées. */
+        val startTime: Long,
+        val lowMark: Double,
+        val highMark: Double,
+        val smoothing: Int,
+        val slots: List<Int>
+    )
+
+    private val cache = mutableMapOf<CacheKey, Pair<Long, Result>>()
+
+    companion object {
+
+        /** Durée de validité du résultat de la période en cours. */
+        private const val CURRENT_PERIOD_TTL_MS = 2 * 60 * 1000L
+        private const val MAX_CACHE_ENTRIES = 12
+
+        /**
+         * Pour le profil moyen (7 j / 30 j), une valeur toutes les 5 min
+         * suffit largement à une médiane horaire. Sur 30 jours à une mesure
+         * par minute, ça divise la charge par cinq sans effet visible.
+         */
+        private const val PROFILE_MIN_INTERVAL_MS = 5 * 60 * 1000L
+    }
+
     enum class Period(val days: Int) {
         DAY(1), WEEK(7), MONTH(30)
     }
@@ -43,6 +70,22 @@ class StatsSummaryCalculator @Inject constructor(
 
     /** Une valeur brute pour le graphique du mode 24 h. */
     data class RawPoint(val timestamp: Long, val value: Double)
+
+    // --- Cache ---------------------------------------------------------
+    // Recalculer 30 jours coûte cher (des dizaines de milliers de mesures) :
+    // on garde les derniers résultats pour que revenir sur une période déjà
+    // consultée soit instantané.
+    //
+    // Une période passée est figée, on la garde toute la session. La période
+    // en cours continue de recevoir des mesures, on la réévalue donc au bout
+    // d'une minute.
+    private class CacheEntry(val result: Result, val computedAt: Long)
+
+    private val cache = object : LinkedHashMap<String, CacheEntry>(8, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CacheEntry>) = size > 12
+    }
+
+    private val currentPeriodTtlMs = 60_000L
 
     /** Temps en cible sur une tranche horaire. */
     data class SlotStat(
@@ -130,6 +173,73 @@ class StatsSummaryCalculator @Inject constructor(
     }
 
     fun calculate(period: Period, offset: Int): Result {
+        // Les réglages d'affichage font partie de la clé : changer le lissage
+        // ou une borne de tranche produit naturellement un défaut de cache,
+        // sans avoir à le vider explicitement.
+        val settings = listOf(
+            preferences.get(IntKey.StatsSummarySmoothingMinutes),
+            preferences.get(IntKey.StatsSummarySlot1Start),
+            preferences.get(IntKey.StatsSummarySlot2Start),
+            preferences.get(IntKey.StatsSummarySlot3Start),
+            preferences.get(IntKey.StatsSummarySlot4Start)
+        ).joinToString(",")
+        val marks = "${preferences.get(UnitDoubleKey.OverviewLowMark)}/${preferences.get(UnitDoubleKey.OverviewHighMark)}"
+        val key = "${period.name}:$offset:$settings:$marks"
+        synchronized(cache) {
+            cache[key]?.let { entry ->
+                val fresh = offset > 0 || System.currentTimeMillis() - entry.computedAt < currentPeriodTtlMs
+                if (fresh) return entry.result
+            }
+        }
+        val result = compute(period, offset)
+        synchronized(cache) {
+            cache[key] = CacheEntry(result, System.currentTimeMillis())
+        }
+        return result
+    }
+
+    /** Vide le cache — à appeler si les réglages d'affichage changent. */
+    fun invalidateCache() {
+        synchronized(cache) { cache.clear() }
+    }
+
+    private fun compute(period: Period, offset: Int): Result {
+        // Cache : revenir sur une période déjà consultée est instantané.
+        // La clé inclut les préférences qui changent le résultat, pour que
+        // modifier une borne ou le lissage invalide naturellement l'entrée.
+        // Pour la période en cours (offset 0), on ne garde le résultat que
+        // quelques minutes, sinon il se figerait au fil des nouvelles mesures.
+        val cacheKey = CacheKey(
+            period = period,
+            offset = offset,
+            startTime = boundsFor(period, offset).first,
+            lowMark = preferences.get(UnitDoubleKey.OverviewLowMark),
+            highMark = preferences.get(UnitDoubleKey.OverviewHighMark),
+            smoothing = preferences.get(IntKey.StatsSummarySmoothingMinutes),
+            slots = listOf(
+                preferences.get(IntKey.StatsSummarySlot1Start),
+                preferences.get(IntKey.StatsSummarySlot2Start),
+                preferences.get(IntKey.StatsSummarySlot3Start),
+                preferences.get(IntKey.StatsSummarySlot4Start)
+            )
+        )
+        synchronized(cache) {
+            cache[cacheKey]?.let { (computedAt, result) ->
+                val stillFresh = offset > 0 || System.currentTimeMillis() - computedAt < CURRENT_PERIOD_TTL_MS
+                if (stillFresh) return result
+            }
+        }
+
+        val result = compute(period, offset)
+        synchronized(cache) {
+            // Quelques entrées suffisent (3 périodes × navigation récente)
+            if (cache.size >= MAX_CACHE_ENTRIES) cache.clear()
+            cache[cacheKey] = System.currentTimeMillis() to result
+        }
+        return result
+    }
+
+    private fun compute(period: Period, offset: Int): Result {
         val (start, end) = boundsFor(period, offset)
 
         // Mêmes repères que l'écran principal (Préférences → Overview).
@@ -277,7 +387,13 @@ class StatsSummaryCalculator @Inject constructor(
     private fun buildHourlyProfile(readings: List<app.aaps.core.data.model.GV>): List<HourlyPoint> {
         val buckets = Array(24) { mutableListOf<Double>() }
         val cal = Calendar.getInstance()
+        // Sous-échantillonnage : on ne retient qu'une valeur toutes les
+        // 5 minutes. Sur 30 jours à une mesure par minute, ça fait passer de
+        // ~43 000 à ~8 600 points, pour une médiane horaire identique.
+        var lastKept = Long.MIN_VALUE
         readings.forEach { gv ->
+            if (gv.timestamp - lastKept < PROFILE_MIN_INTERVAL_MS) return@forEach
+            lastKept = gv.timestamp
             cal.timeInMillis = gv.timestamp
             buckets[cal.get(Calendar.HOUR_OF_DAY)].add(profileUtil.fromMgdlToUnits(gv.value))
         }

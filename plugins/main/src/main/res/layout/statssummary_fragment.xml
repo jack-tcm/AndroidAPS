@@ -61,6 +61,15 @@
                 android:src="@drawable/ic_statssummary_next" />
         </LinearLayout>
 
+        <ProgressBar
+            android:id="@+id/statssummary_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

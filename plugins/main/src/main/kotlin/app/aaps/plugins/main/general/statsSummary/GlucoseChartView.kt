@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 import kotlin.math.max
@@ -28,6 +27,8 @@ class GlucoseChartView @JvmOverloads constructor(
     companion object {
 
         private const val COLOR_LINE = 0xFF00E676.toInt()
+        private const val COLOR_LINE_HIGH = 0xFFFFEB3B.toInt()
+        private const val COLOR_LINE_LOW = 0xFFFF5252.toInt()
         private const val COLOR_BAND = 0x382E7D32
         private const val COLOR_IQR = 0x3300E676
         private const val COLOR_GRID = 0x33FFFFFF
@@ -39,7 +40,6 @@ class GlucoseChartView @JvmOverloads constructor(
     }
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val rect = RectF()
     private val density = resources.displayMetrics.density
 
     private var lowMark = 72.0
@@ -133,14 +133,7 @@ class GlucoseChartView @JvmOverloads constructor(
         paint.strokeWidth = 2f * density
         paint.strokeJoin = Paint.Join.ROUND
         paint.strokeCap = Paint.Cap.ROUND
-        paint.color = COLOR_LINE
-        val path = Path()
-        rawPoints.forEachIndexed { i, p ->
-            val x = xOf(p.timestamp)
-            val y = yOf(p.value)
-            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-        }
-        canvas.drawPath(path, paint)
+        drawColoredLine(canvas, rawPoints.map { xOf(it.timestamp) to it.value }, yOf)
 
         // Repères toutes les 6 h
         drawHourLabels(canvas, left, right - left, bottom) { hour ->
@@ -177,14 +170,7 @@ class GlucoseChartView @JvmOverloads constructor(
         paint.strokeWidth = 2.5f * density
         paint.strokeJoin = Paint.Join.ROUND
         paint.strokeCap = Paint.Cap.ROUND
-        paint.color = COLOR_LINE
-        val median = Path()
-        hourly.forEachIndexed { i, p ->
-            val x = xOf(p.hour + 0.5)
-            val y = yOf(p.median)
-            if (i == 0) median.moveTo(x, y) else median.lineTo(x, y)
-        }
-        canvas.drawPath(median, paint)
+        drawColoredLine(canvas, hourly.map { xOf(it.hour + 0.5) to it.median }, yOf)
 
         drawHourLabels(canvas, left, plotW, bottom) { hour -> xOf(hour.toDouble()) }
     }
@@ -203,6 +189,55 @@ class GlucoseChartView @JvmOverloads constructor(
             paint.color = COLOR_LABEL
             canvas.drawText("${hour}h", px, bottom + 11f * density, paint)
         }
+    }
+
+    /**
+     * Trace une polyligne dont la couleur suit la valeur : vert dans la
+     * cible, jaune au-dessus du repère haut, rouge en dessous du repère bas.
+     *
+     * Chaque segment est découpé exactement au point de franchissement d'une
+     * borne, pour que le changement de couleur tombe pile sur la ligne de
+     * repère et non au point de mesure suivant.
+     *
+     * @param pts liste de (x en pixels, valeur dans l'unité d'affichage)
+     */
+    private fun drawColoredLine(canvas: Canvas, pts: List<Pair<Float, Double>>, yOf: (Double) -> Float) {
+        if (pts.size < 2) return
+
+        for (i in 1 until pts.size) {
+            val (x0, v0) = pts[i - 1]
+            val (x1, v1) = pts[i]
+
+            // Fractions du segment où une borne est franchie
+            val cuts = sortedSetOf(0.0, 1.0)
+            listOf(lowMark, highMark).forEach { threshold ->
+                if ((v0 - threshold) * (v1 - threshold) < 0.0 && v1 != v0) {
+                    cuts.add((threshold - v0) / (v1 - v0))
+                }
+            }
+
+            val ts = cuts.toList()
+            for (j in 1 until ts.size) {
+                val ta = ts[j - 1]
+                val tb = ts[j]
+                val va = v0 + (v1 - v0) * ta
+                val vb = v0 + (v1 - v0) * tb
+                // La couleur est décidée au milieu du sous-segment : il est
+                // par construction entièrement d'un seul côté des bornes.
+                paint.color = colorFor((va + vb) / 2.0)
+                canvas.drawLine(
+                    x0 + (x1 - x0) * ta.toFloat(), yOf(va),
+                    x0 + (x1 - x0) * tb.toFloat(), yOf(vb),
+                    paint
+                )
+            }
+        }
+    }
+
+    private fun colorFor(value: Double): Int = when {
+        value > highMark -> COLOR_LINE_HIGH
+        value < lowMark  -> COLOR_LINE_LOW
+        else             -> COLOR_LINE
     }
 
     private fun format(v: Double): String =

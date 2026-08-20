@@ -99,18 +99,34 @@ class StatsSummaryFragment : DaggerFragment() {
         val requestedPeriod = period
         val requestedOffset = offset
 
+        // La barre n'apparaît que si le calcul dure : sur une période en
+        // cache, le résultat arrive en quelques millisecondes et un
+        // clignotement serait plus gênant qu'utile.
+        var settled = false
+        binding.root.postDelayed({
+            if (!settled && _binding != null) {
+                binding.statssummaryProgress.visibility = View.VISIBLE
+            }
+        }, PROGRESS_DELAY_MS)
+
         disposable += Single.fromCallable { calculator.calculate(requestedPeriod, requestedOffset) }
             .subscribeOn(aapsSchedulers.io)
             .observeOn(aapsSchedulers.main)
             .subscribe(
                 { result ->
+                    settled = true
                     // La vue peut avoir été détruite pendant le calcul
                     if (_binding == null) return@subscribe
+                    binding.statssummaryProgress.visibility = View.GONE
                     // Un autre onglet a pu être choisi entre-temps
                     if (result.period != period || result.offset != offset) return@subscribe
                     display(result)
                 },
-                { error -> aapsLogger.error("StatsSummary calculation failed", error) }
+                { error ->
+                    settled = true
+                    _binding?.statssummaryProgress?.visibility = View.GONE
+                    aapsLogger.error("StatsSummary calculation failed", error)
+                }
             )
     }
 
@@ -237,6 +253,8 @@ class StatsSummaryFragment : DaggerFragment() {
     companion object {
 
         private const val PLACEHOLDER = "--"
+        /** Délai avant d'afficher la barre : évite un clignotement si le résultat est en cache. */
+        private const val PROGRESS_DELAY_MS = 250L
         private val dayFormat = SimpleDateFormat("EEEE d MMMM", Locale.getDefault())
         private val shortFormat = SimpleDateFormat("d MMM", Locale.getDefault())
         private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
