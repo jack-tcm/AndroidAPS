@@ -14,7 +14,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.skyscreamer.jsonassert.JSONAssert
 
-private const val STRING_JSON = """{"data":{"smbState":true},"type":"ActionSMBChange"}"""
+private const val STRING_JSON = """{"data":{"smbState":true,"smbTarget":"MASTER","durationInMinutes":0},"type":"ActionSMBChange"}"""
 
 class ActionSMBChangeTest : ActionsTestBase() {
 
@@ -22,7 +22,9 @@ class ActionSMBChangeTest : ActionsTestBase() {
 
     @BeforeEach fun setUp() {
         whenever(rh.gs(R.string.changeSmbState)).thenReturn("Enable/disable SMB")
-        whenever(rh.gs(R.string.changeSmbTo)).thenReturn("Change SMB to %1\$s")
+        whenever(rh.gs(R.string.changeSmbTo2)).thenReturn("%1\$s: %2\$s")
+        whenever(rh.gs(R.string.smbTargetMaster)).thenReturn("SMB master switch")
+        whenever(rh.gs(R.string.smbTargetAlways)).thenReturn("SMB always")
         whenever(rh.gs(R.string.on)).thenReturn("ON")
         whenever(rh.gs(R.string.off)).thenReturn("OFF")
 
@@ -34,7 +36,7 @@ class ActionSMBChangeTest : ActionsTestBase() {
     }
 
     @Test fun shortDescriptionTest() {
-        assertThat(sut.shortDescription()).isEqualTo("Change SMB to ON")
+        assertThat(sut.shortDescription()).isEqualTo("SMB master switch: ON")
     }
 
     @Test fun doAction() {
@@ -60,6 +62,15 @@ class ActionSMBChangeTest : ActionsTestBase() {
     @Test fun fromJSONTest() {
         sut.fromJSON("""{"smbState":"false"}""")
         assertThat(sut.smbState.value).isEqualTo(false)
+        // Règle créée avant l'ajout de la durée : doit rester permanente
+        assertThat(sut.duration.value).isEqualTo(0)
+    }
+
+    @Test fun fromJSONWithDurationTest() {
+        sut.fromJSON("""{"smbState":"true","smbTarget":"ALWAYS","durationInMinutes":180}""")
+        assertThat(sut.smbState.value).isEqualTo(true)
+        assertThat(sut.duration.value).isEqualTo(180)
+        assertThat(sut.smbTarget.value).isEqualTo("SMB always")
     }
 
     @Test fun iconTest() {

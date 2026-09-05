@@ -327,4 +327,7 @@
     <string name="steps_shortname">STEPS</string>
     <string name="simple_mode_enabled">Simple mode enabled</string>
 
+    <string name="smb_status">SMB</string>
+    <string name="smb_status_timed_hours">SMB %1$dh%2$02d</string>
+    <string name="smb_status_timed_minutes">SMB %1$dmin</string>
 </resources>

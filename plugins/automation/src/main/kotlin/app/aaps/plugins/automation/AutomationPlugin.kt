@@ -32,6 +32,9 @@ import app.aaps.core.interfaces.rx.events.EventNetworkChange
 import app.aaps.core.interfaces.rx.events.EventPreferenceChange
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
+import app.aaps.core.keys.BooleanKey
+import app.aaps.core.keys.BooleanNonKey
+import app.aaps.core.keys.LongNonKey
 import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.validators.preferences.AdaptiveListPreference
@@ -241,6 +244,26 @@ class AutomationPlugin @Inject constructor(
 
     internal fun processActions() {
         if (!config.appInitialized) return
+
+        // Community patch — retour automatique de l'action « Changer SMB »
+        // quand une durée a été renseignée. Vérifié ici plutôt que par un
+        // minuteur en mémoire, pour que le retour ait lieu même si l'app a
+        // redémarré depuis. Volontairement placé avant les vérifications
+        // ci-dessous : l'état doit être restauré même boucle suspendue.
+        val smbRevertAt = preferences.get(LongNonKey.AutomationSmbRevertAt)
+        if (smbRevertAt != 0L && dateUtil.now() >= smbRevertAt) {
+            val restored = preferences.get(BooleanNonKey.AutomationSmbRevertValue)
+            // On rend son état à l'option qui avait été modifiée, pas à une
+            // autre : l'action peut viser le maître ou « SMB toujours ».
+            val key =
+                if (preferences.get(BooleanNonKey.AutomationSmbRevertIsAlways)) BooleanKey.ApsUseSmbAlways
+                else BooleanKey.ApsUseSmb
+            preferences.put(key, restored)
+            preferences.put(LongNonKey.AutomationSmbRevertAt, 0L)
+            aapsLogger.debug(LTag.AUTOMATION, "SMB duration expired, ${key.key} restored to $restored")
+            executionLog.add(rh.gs(R.string.smbDurationExpired))
+            rxBus.send(EventAutomationUpdateGui())
+        }
         /**
          * Changed to false if some condition prevents automation from running.
          * In this case only system automations are enabled.

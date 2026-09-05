@@ -144,6 +144,13 @@
     <string name="changeSmbState">Activer/désactiver SMB</string>
     <string name="changeSmbTo">Changer SMB en %1$s</string>
     <string name="newSmbMode">Nouveau mode SMB :</string>
+    <string name="changeSmbTo2">%1$s : %2$s</string>
+    <string name="smbTargetLabel">Réglage SMB :</string>
+    <string name="smbTargetMaster">Interrupteur maître SMB</string>
+    <string name="smbTargetAlways">SMB toujours</string>
+    <string name="changeSmbToForDuration">%1$s : %2$s pendant %3$d min</string>
+    <string name="smbDuration">Durée (0 = permanent) :</string>
+    <string name="smbDurationExpired">Durée SMB expirée, état précédent restauré</string>
     <string name="on">ACTIVÉ</string>
     <string name="off">DÉSACTIVÉ</string>
 </resources>

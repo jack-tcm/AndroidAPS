@@ -150,6 +150,13 @@
     <string name="changeSmbState">Enable/disable SMB</string>
     <string name="changeSmbTo">Change SMB to %1$s</string>
     <string name="newSmbMode">New SMB mode:</string>
+    <string name="changeSmbTo2">%1$s: %2$s</string>
+    <string name="smbTargetLabel">SMB setting:</string>
+    <string name="smbTargetMaster">SMB master switch</string>
+    <string name="smbTargetAlways">SMB always</string>
+    <string name="changeSmbToForDuration">%1$s: %2$s for %3$d min</string>
+    <string name="smbDuration">Duration (0 = permanent):</string>
+    <string name="smbDurationExpired">SMB duration expired, previous state restored</string>
     <string name="on">ON</string>
     <string name="off">OFF</string>
 

@@ -12,8 +12,11 @@ import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.stats.TddCalculator
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
+import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.IntKey
+import app.aaps.core.keys.LongNonKey
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.plugins.main.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -49,10 +52,16 @@ class StatusLightHandler @Inject constructor(
         sensorAge: TextView?,
         sensorBatteryLevel: TextView?,
         batteryAge: TextView?,
-        batteryLevel: TextView?
+        batteryLevel: TextView?,
+        /**
+         * Community patch — indicateur d'état SMB.
+         * Optionnel pour ne pas modifier les autres appelants.
+         */
+        smbStatus: TextView? = null
     ) {
         val pump = activePlugin.activePump
         val bgSource = activePlugin.activeBgSource
+        handleSmbStatus(smbStatus)
         handleAge(cannulaAge, TE.Type.CANNULA_CHANGE, IntKey.OverviewCageWarning, IntKey.OverviewCageCritical)
         handleAge(insulinAge, TE.Type.INSULIN_CHANGE, IntKey.OverviewIageWarning, IntKey.OverviewIageCritical)
         handleAge(sensorAge, TE.Type.SENSOR_CHANGE, IntKey.OverviewSageWarning, IntKey.OverviewSageCritical)
@@ -93,6 +102,45 @@ class StatusLightHandler @Inject constructor(
                 batteryLevel?.setTextColor(rh.gac(batteryLevel.context, app.aaps.core.ui.R.attr.defaultTextColor))
             }
         }
+    }
+
+    /**
+     * Community patch — affiche l'état des SMB dans la barre d'indicateurs.
+     *
+     * « SMB » seul quand les SMB sont actifs de façon permanente, avec le
+     * temps restant quand une activation minutée est en cours (action
+     * Automation « Changer SMB » avec une durée).
+     *
+     * Vert = actif, gris = inactif.
+     */
+    private fun handleSmbStatus(view: TextView?) {
+        view ?: return
+        // Les SMB ne partent que si le maître ET « SMB toujours » sont actifs
+        // — sauf si des glucides sont en cours, mais l'indicateur reflète ici
+        // la disponibilité à jeun, qui est le cas d'usage de l'automatisation.
+        val enabled = preferences.get(BooleanKey.ApsUseSmb) && preferences.get(BooleanKey.ApsUseSmbAlways)
+        val revertAt = preferences.get(LongNonKey.AutomationSmbRevertAt)
+        val remaining = revertAt - dateUtil.now()
+
+        view.text =
+            if (revertAt != 0L && remaining > 0) {
+                val totalMinutes = TimeUnit.MILLISECONDS.toMinutes(remaining)
+                val hours = totalMinutes / 60
+                val minutes = totalMinutes % 60
+                if (hours > 0) rh.gs(R.string.smb_status_timed_hours, hours, minutes)
+                else rh.gs(R.string.smb_status_timed_minutes, minutes)
+            } else {
+                rh.gs(R.string.smb_status)
+            }
+
+        view.setTextColor(
+            rh.gac(
+                view.context,
+                if (enabled) app.aaps.core.ui.R.attr.metadataTextOkColor
+                else app.aaps.core.ui.R.attr.defaultTextColor
+            )
+        )
+        view.alpha = if (enabled) 1.0f else 0.5f
     }
 
     private fun handleAge(view: TextView?, type: TE.Type, warnSettings: IntKey, urgentSettings: IntKey) {

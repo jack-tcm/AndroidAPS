@@ -305,4 +305,7 @@
     <string name="overview_show_steps">Pas</string>
     <string name="steps_shortname">PAS</string>
     <string name="simple_mode_enabled">Mode simple activé</string>
+    <string name="smb_status">SMB</string>
+    <string name="smb_status_timed_hours">SMB %1$dh%2$02d</string>
+    <string name="smb_status_timed_minutes">SMB %1$dmin</string>
 </resources>
