@@ -159,8 +159,21 @@ Il autorise les SMB, mais l'algorithme décide ensuite *quand* les délivrer :
 Aucune condition remplie → aucun SMB, quel que soit le maître.
 
 **Résolution.** Choisir **« SMB toujours »** dans le champ *Réglage SMB* de
-l'action. L'indicateur SMB de l'écran d'accueil reflète désormais les deux
-réglages, ce qui rend le problème visible immédiatement.
+l'action.
+
+### L'indicateur SMB reste gris alors que des SMB partent
+
+**Cause.** Première version de l'indicateur : elle testait `use_smb` **et**
+`enableSMB_always`. Avec « SMB en permanence » sur OFF — configuration
+normale — il restait gris en permanence, y compris pendant un repas où les
+SMB fonctionnaient via « SMB avec les GA ».
+
+**Résolution.** L'indicateur évalue désormais les mêmes conditions que
+l'algorithme : glucides actifs, glucides dans les 6 h, cible temporaire.
+
+**À retenir.** Un indicateur qui lit une préférence isolée ne dit rien de
+l'état réel du système. Les cinq sous-options SMB ne sont pas
+interchangeables.
 
 ### La règle se redéclenche toutes les 5 minutes
 

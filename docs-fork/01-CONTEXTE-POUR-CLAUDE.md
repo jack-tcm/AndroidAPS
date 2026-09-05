@@ -92,6 +92,10 @@ durée avec retour automatique, indicateur dans la barre de statuts.
    sans COB : c'est `enableSMB_always` qui compte à jeun.
 6. **Test JSON strict** — `ActionSMBChangeTest` compare avec
    `JSONAssert(..., true)` : tout nouveau champ dans `toJSON()` casse le test.
+7. **Indicateur trop simpliste** — l'état SMB testait `use_smb &&
+   enableSMB_always`, ce qui le laissait gris en permanence alors que des SMB
+   partaient via les glucides actifs. Un indicateur doit refléter **la
+   condition réelle**, pas un état de préférence isolé.
 
 ## Contrôles avant de livrer un patch
 
@@ -111,6 +115,26 @@ grep -oE "^    (private )?(fun|val|class) [A-Za-z]+" <fichier.kt> | sort | uniq 
 **Je n'ai jamais pu compiler** : pas d'Android SDK dans l'environnement.
 Tout patch livré est vérifié à la lecture uniquement, et doit être annoncé
 comme tel.
+
+## Tenue de la documentation
+
+Le dépôt contient un dossier **`docs-fork/`** avec sept documents
+(journal, contexte, dev, non technique, utilisateur, maintenance, support).
+
+**À chaque évolution livrée, mettre à jour la documentation dans le même
+lot**, sans attendre qu'on le demande :
+
+- `00-JOURNAL.md` — une entrée systématiquement, en tête
+- `02-DOC-DEVELOPPEUR.md` — si l'inventaire des fichiers, les dépendances
+  ou une décision d'architecture changent
+- `04-GUIDE-UTILISATEUR.md` — si le comportement visible ou un réglage change
+- `06-DOC-SUPPORT.md` — si un bug a été rencontré, avec symptôme, cause et
+  résolution
+- `05-DOC-MAINTENANCE.md` — si la chaîne de build ou la procédure changent
+- `01` et `03` — plus rarement
+
+Livrer les fichiers de doc modifiés **dans le zip du patch**, sous
+`docs-fork/`, pour qu'ils se décompressent au bon endroit.
 
 ## Format de livraison attendu
 

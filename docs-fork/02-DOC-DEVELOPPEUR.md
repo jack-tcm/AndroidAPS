@@ -50,7 +50,7 @@ plugins/main/res/values-fr/statssummary_strings.xml
 | `app/.../di/PluginsListModule.kt` | +2 lignes | moyen |
 | `plugins/automation/res/values/strings.xml` | +5 lignes | moyen |
 | `plugins/automation/res/values-fr-rFR/strings.xml` | +5 lignes | moyen |
-| `plugins/main/.../overview/ui/StatusLightHandler.kt` | +1 param, +1 fonction | moyen |
+| `plugins/main/.../overview/ui/StatusLightHandler.kt` | +1 param, +4 fonctions, +1 dépendance | moyen |
 | `plugins/main/.../overview/OverviewFragment.kt` | +1 ligne | faible |
 | `plugins/main/res/layout/overview_statuslights_layout.xml` | +1 bloc | faible |
 | `plugins/main/.../di/PluginsModule.kt` | +1 ligne | faible |
@@ -124,6 +124,21 @@ minuteur mémoire : le retour survit à un redémarrage de l'app.
 
 Le paramètre ajouté à `updateStatusLights()` a une valeur par défaut `null`,
 pour que `ActionsFragment` — autre appelant — compile sans modification.
+
+**Indicateur SMB.** `StatusLightHandler` reproduit les conditions de
+`enable_smb` plutôt que de lire une préférence isolée : maître actif **et**
+au moins une sous-option satisfaite dans le contexte du moment.
+
+| Sous-option | Source de la condition |
+|---|---|
+| `ApsUseSmbAlways` | toujours vraie |
+| `ApsUseSmbWithCob` | `IobCobCalculator.getCobInfo().displayCob > 0` |
+| `ApsUseSmbAfterCarbs` | `persistenceLayer.getCarbsFromTimeExpanded(now - 6 h)` |
+| `ApsUseSmbWithLowTt` / `WithHighTt` | `persistenceLayer.getTemporaryTargetActiveAt(now)` |
+
+Cela ajoute **`IobCobCalculator`** aux dépendances injectées de la classe.
+Chaque lecture est protégée par un `try/catch` renvoyant `false` : un
+indicateur ne doit jamais faire tomber l'écran d'accueil.
 
 ## 4. Procédure de mise à jour vers une nouvelle version d'AAPS
 

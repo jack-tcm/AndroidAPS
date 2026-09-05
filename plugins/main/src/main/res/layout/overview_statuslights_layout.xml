@@ -122,28 +122,16 @@
 
     </LinearLayout>
 
-    <!-- Community patch: indicateur d'etat SMB -->
-    <LinearLayout
-        android:id="@+id/smb_layout"
+    <!-- Community patch: indicateur d'etat SMB (texte seul, sans icone) -->
+    <TextView
+        android:id="@+id/smb_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:focusable="true"
-        android:gravity="center"
-        tools:ignore="UseCompoundDrawables">
-
-        <ImageView
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:contentDescription="@string/smb_status"
-            app:srcCompat="@drawable/ic_bolus" />
-
-        <TextView
-            android:id="@+id/smb_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:lines="1"
-            tools:text="SMB 2h15" />
-
-    </LinearLayout>
+        android:gravity="center_vertical"
+        android:lines="1"
+        android:paddingStart="6dp"
+        android:paddingEnd="0dp"
+        android:textStyle="bold"
+        tools:text="SMB" />
 
 </com.google.android.flexbox.FlexboxLayout>

@@ -137,17 +137,29 @@ déclenchera jamais.
 ## Indicateur SMB
 
 Dans la barre qui affiche déjà l'âge du pod, le réservoir et l'âge du
-capteur.
+capteur, sous la forme d'un libellé « SMB » en gras — sans icône.
 
 | Affichage | Signification |
 |---|---|
-| **SMB** vert | disponibles à jeun |
+| **SMB** vert | un SMB peut partir **maintenant** |
 | **SMB 2h15** vert | activation minutée, temps restant avant retour |
-| **SMB** gris | indisponibles |
+| **SMB** gris | aucun SMB possible dans le contexte actuel |
 
-Il tient compte des **deux** réglages (maître et « toujours »), puisque les
-deux sont nécessaires pour qu'un SMB parte sans glucides. C'est le moyen de
-vérifier d'un coup d'œil qu'une règle a bien produit son effet.
+Il ne se contente pas de lire un réglage : il évalue les mêmes conditions
+que l'algorithme. Le vert apparaît si l'interrupteur maître est actif **et**
+qu'au moins une de ces situations est vraie :
+
+- « SMB en permanence » est activé
+- des **glucides sont actifs** et « SMB avec les GA » est activé
+- des glucides ont été pris **dans les 6 dernières heures** et « SMB après
+  les glucides » est activé
+- une **cible temporaire** est active et l'option correspondante est activée
+
+Concrètement, avec « SMB en permanence » sur OFF : vert après un repas, gris
+à jeun. Et vert le matin si une règle Automation a activé « SMB toujours ».
+
+C'est le moyen le plus rapide de vérifier qu'une règle a produit son effet —
+un log « OK » dans l'onglet AUTO ne le garantit pas.
 
 ---
 
