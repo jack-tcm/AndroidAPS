@@ -12,6 +12,7 @@ import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.stats.TddCalculator
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
+import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.LongNonKey
@@ -35,6 +36,7 @@ class StatusLightHandler @Inject constructor(
     private val warnColors: WarnColors,
     private val config: Config,
     private val persistenceLayer: PersistenceLayer,
+    private val iobCobCalculator: IobCobCalculator,
     private val tddCalculator: TddCalculator,
     private val decimalFormatter: DecimalFormatter
 ) {
@@ -107,18 +109,26 @@ class StatusLightHandler @Inject constructor(
     /**
      * Community patch — affiche l'état des SMB dans la barre d'indicateurs.
      *
-     * « SMB » seul quand les SMB sont actifs de façon permanente, avec le
-     * temps restant quand une activation minutée est en cours (action
-     * Automation « Changer SMB » avec une durée).
+     * Reproduit les conditions réelles de l'algorithme (`enable_smb`) : le
+     * maître ne suffit pas, il faut aussi qu'une des sous-options soit
+     * satisfaite dans le contexte du moment. C'est ce qui distingue « les SMB
+     * sont autorisés » de « les SMB peuvent partir maintenant ».
      *
-     * Vert = actif, gris = inactif.
+     * Vert = un SMB peut partir maintenant. Gris = non.
+     * Le temps restant s'affiche quand une activation minutée est en cours.
      */
     private fun handleSmbStatus(view: TextView?) {
         view ?: return
-        // Les SMB ne partent que si le maître ET « SMB toujours » sont actifs
-        // — sauf si des glucides sont en cours, mais l'indicateur reflète ici
-        // la disponibilité à jeun, qui est le cas d'usage de l'automatisation.
-        val enabled = preferences.get(BooleanKey.ApsUseSmb) && preferences.get(BooleanKey.ApsUseSmbAlways)
+
+        val master = preferences.get(BooleanKey.ApsUseSmb)
+        val possible = master && (
+            preferences.get(BooleanKey.ApsUseSmbAlways) ||
+                (preferences.get(BooleanKey.ApsUseSmbWithCob) && hasCob()) ||
+                (preferences.get(BooleanKey.ApsUseSmbAfterCarbs) && hasRecentCarbs()) ||
+                (preferences.get(BooleanKey.ApsUseSmbWithLowTt) && hasTempTarget()) ||
+                (preferences.get(BooleanKey.ApsUseSmbWithHighTt) && hasTempTarget())
+            )
+
         val revertAt = preferences.get(LongNonKey.AutomationSmbRevertAt)
         val remaining = revertAt - dateUtil.now()
 
@@ -136,12 +146,35 @@ class StatusLightHandler @Inject constructor(
         view.setTextColor(
             rh.gac(
                 view.context,
-                if (enabled) app.aaps.core.ui.R.attr.metadataTextOkColor
+                if (possible) app.aaps.core.ui.R.attr.metadataTextOkColor
                 else app.aaps.core.ui.R.attr.defaultTextColor
             )
         )
-        view.alpha = if (enabled) 1.0f else 0.5f
+        view.alpha = if (possible) 1.0f else 0.5f
     }
+
+    private fun hasCob(): Boolean =
+        try {
+            iobCobCalculator.getCobInfo("StatusLightHandler").displayCob?.let { it > 0.0 } ?: false
+        } catch (e: Exception) {
+            false
+        }
+
+    /** Fenêtre de 6 h après le dernier apport de glucides. */
+    private fun hasRecentCarbs(): Boolean =
+        try {
+            val from = dateUtil.now() - TimeUnit.HOURS.toMillis(6)
+            persistenceLayer.getCarbsFromTimeExpanded(from, false).any { it.amount > 0.0 }
+        } catch (e: Exception) {
+            false
+        }
+
+    private fun hasTempTarget(): Boolean =
+        try {
+            persistenceLayer.getTemporaryTargetActiveAt(dateUtil.now()) != null
+        } catch (e: Exception) {
+            false
+        }
 
     private fun handleAge(view: TextView?, type: TE.Type, warnSettings: IntKey, urgentSettings: IntKey) {
         val warn = preferences.get(warnSettings)
