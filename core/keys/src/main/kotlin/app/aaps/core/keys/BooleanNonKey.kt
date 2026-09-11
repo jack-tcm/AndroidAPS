@@ -23,9 +23,7 @@ enum class BooleanNonKey(
 
     // Community patch — état SMB à restaurer à l'expiration de la durée
     // renseignée dans l'action Automation « Changer SMB ».
-    AutomationSmbRevertValue("automation_smb_revert_value", false),
-
-    // Quelle option restaurer : true = « SMB toujours » (enableSMB_always),
-    // false = l'interrupteur maître (use_smb).
-    AutomationSmbRevertIsAlways("automation_smb_revert_is_always", false),
+    // Une valeur par cible, en regard des échéances de LongNonKey.
+    AutomationSmbRevertValueMaster("automation_smb_revert_value", false),
+    AutomationSmbRevertValueAlways("automation_smb_revert_value_always", false),
 }

@@ -114,9 +114,20 @@ progression affichée seulement après 250 ms.
 
 ### D — Action SMB
 
-Trois préférences non exposées portent l'état du retour automatique :
-`LongNonKey.AutomationSmbRevertAt`, `BooleanNonKey.AutomationSmbRevertValue`,
-`BooleanNonKey.AutomationSmbRevertIsAlways`.
+Le retour automatique est suivi **par cible**, chacune portant ses propres
+clés — c'est l'enum `SmbTarget` qui les associe :
+
+| Cible | Préférence agie | Échéance | Valeur à restaurer |
+|---|---|---|---|
+| MASTER | `ApsUseSmb` | `AutomationSmbRevertAtMaster` | `AutomationSmbRevertValueMaster` |
+| ALWAYS | `ApsUseSmbAlways` | `AutomationSmbRevertAtAlways` | `AutomationSmbRevertValueAlways` |
+
+Ce découplage est nécessaire : deux règles visant des options différentes
+peuvent avoir un retour en attente simultanément. Avec un jeu de clés unique,
+la seconde règle n'armait rien et sa modification n'était jamais annulée.
+
+L'expiration parcourt `SmbTarget.entries` ; l'indicateur affiche l'échéance
+la plus proche des deux.
 
 `AutomationPlugin.processActions()` vérifie l'échéance à chaque cycle, **avant**
 les contrôles de boucle suspendue. Persistance en préférence plutôt qu'en

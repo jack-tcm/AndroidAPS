@@ -250,19 +250,20 @@ class AutomationPlugin @Inject constructor(
         // minuteur en mémoire, pour que le retour ait lieu même si l'app a
         // redémarré depuis. Volontairement placé avant les vérifications
         // ci-dessous : l'état doit être restauré même boucle suspendue.
-        val smbRevertAt = preferences.get(LongNonKey.AutomationSmbRevertAt)
-        if (smbRevertAt != 0L && dateUtil.now() >= smbRevertAt) {
-            val restored = preferences.get(BooleanNonKey.AutomationSmbRevertValue)
-            // On rend son état à l'option qui avait été modifiée, pas à une
-            // autre : l'action peut viser le maître ou « SMB toujours ».
-            val key =
-                if (preferences.get(BooleanNonKey.AutomationSmbRevertIsAlways)) BooleanKey.ApsUseSmbAlways
-                else BooleanKey.ApsUseSmb
-            preferences.put(key, restored)
-            preferences.put(LongNonKey.AutomationSmbRevertAt, 0L)
-            aapsLogger.debug(LTag.AUTOMATION, "SMB duration expired, ${key.key} restored to $restored")
-            executionLog.add(rh.gs(R.string.smbDurationExpired))
-            rxBus.send(EventAutomationUpdateGui())
+        //
+        // Les deux cibles sont suivies séparément : une règle agissant sur
+        // « SMB toujours » et une autre sur l'interrupteur maître peuvent
+        // avoir un retour en attente en même temps sans s'écraser.
+        ActionSMBChange.SmbTarget.entries.forEach { target ->
+            val revertAt = preferences.get(target.revertAtKey)
+            if (revertAt != 0L && dateUtil.now() >= revertAt) {
+                val restored = preferences.get(target.revertValueKey)
+                preferences.put(target.key, restored)
+                preferences.put(target.revertAtKey, 0L)
+                aapsLogger.debug(LTag.AUTOMATION, "SMB duration expired, ${target.key.key} restored to $restored")
+                executionLog.add(rh.gs(R.string.smbDurationExpired))
+                rxBus.send(EventAutomationUpdateGui())
+            }
         }
         /**
          * Changed to false if some condition prevents automation from running.

@@ -129,7 +129,12 @@ class StatusLightHandler @Inject constructor(
                 (preferences.get(BooleanKey.ApsUseSmbWithHighTt) && hasTempTarget())
             )
 
-        val revertAt = preferences.get(LongNonKey.AutomationSmbRevertAt)
+        // Deux retours peuvent être en attente (un par cible) : on affiche
+        // le plus proche, c'est-à-dire le prochain changement à venir.
+        val revertAt = listOf(
+            preferences.get(LongNonKey.AutomationSmbRevertAtMaster),
+            preferences.get(LongNonKey.AutomationSmbRevertAtAlways)
+        ).filter { it != 0L }.minOrNull() ?: 0L
         val remaining = revertAt - dateUtil.now()
 
         view.text =

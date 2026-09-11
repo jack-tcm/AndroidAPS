@@ -5,6 +5,56 @@ retrouver rapidement l'origine d'un comportement.
 
 ---
 
+## 2026-09-10 — Cible SMB perdue à la réinstallation + message pod
+
+**Correctif.** La cible choisie (« SMB toujours ») repassait sur
+l'interrupteur maître après installation d'un APK.
+
+L'état était dérivé du **libellé traduit** affiché par le menu déroulant :
+`selectedTarget()` remappait ce libellé vers l'enum et retombait sur MASTER
+en cas d'échec. Le premier enregistrement figeait alors cette perte.
+
+Un champ `target` devient la source de vérité. Il n'est mis à jour que
+lorsqu'un libellé correspond réellement à une entrée de l'enum — jamais de
+retour silencieux sur MASTER. Le menu est resynchronisé à l'ouverture du
+dialogue, une fois sa liste peuplée.
+
+`ActionSMBChange.kt`
+
+**Message d'activation du pod.** `omnipod_dash_scan_failed` complété : si le
+pod a émis ses deux bips, il fonctionne, et c'est le scan Bluetooth du
+téléphone qui est bloqué — redémarrer.
+
+Troisième occurrence du même problème (voir doc support).
+
+`pump/omnipod/dash/res/values/strings.xml` et `values-fr-rFR/`
+
+---
+
+## 2026-09-07 — Retour SMB : suivi par cible
+
+**Correctif.** Le retour automatique ne gérait qu'une seule échéance. Deux
+règles visant des options différentes — l'aube sur « SMB toujours », une
+règle hypo sur le maître — entraient en collision :
+
+1. l'aube arme un retour jusqu'à 09:30
+2. la règle hypo se déclenche à 07:00, coupe le maître, mais n'arme rien
+   (une échéance existe déjà)
+3. à 09:30 le retour rend son état à « SMB toujours » — **le maître reste
+   coupé indéfiniment**
+
+Défaillance silencieuse, dans la direction sûre (moins d'insuline) mais
+pouvant durer des jours.
+
+Chaque cible porte désormais ses propres clés d'échéance et de valeur, via
+l'enum `SmbTarget`. L'expiration parcourt les deux. L'indicateur affiche
+l'échéance la plus proche.
+
+`LongNonKey.kt`, `BooleanNonKey.kt`, `ActionSMBChange.kt`,
+`AutomationPlugin.kt`, `StatusLightHandler.kt`
+
+---
+
 ## 2026-09-05 — Indicateur SMB : texte seul
 
 L'icône de seringue est retirée : l'indicateur n'est plus qu'un libellé

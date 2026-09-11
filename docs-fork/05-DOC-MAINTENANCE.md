@@ -109,6 +109,21 @@ APK produit dans :
 app\build\outputs\apk\full\release\
 ```
 
+### Raccourcis Android Studio
+
+| Raccourci | Action |
+|---|---|
+| `Ctrl + F9` | *Make Project* — compile sans produire d'APK, retour rapide sur les erreurs |
+| `Ctrl + Ctrl` | *Run Anything* — taper ensuite `gradlew assembleFullRelease` |
+| `Ctrl + Shift + A` | *Find Action* — taper « Generate Signed » |
+
+*Generate Signed App Bundle / APK* n'a pas de raccourci par défaut ; on peut
+lui en assigner un via **Settings → Keymap**.
+
+Workflow conseillé : `Ctrl + F9` après chaque modification pour valider la
+compilation en quelques secondes, puis le build signé seulement quand tout
+compile.
+
 ### En ligne de commande
 
 ```bash

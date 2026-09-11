@@ -22,7 +22,8 @@
     <!-- Exceptions -->
     <string name="omnipod_dash_failed_to_connect">Echec de connexion au pod</string>
     <string name="omnipod_dash_found_too_many_pods">Trop de pods trouvés pour l\'activation</string>
-    <string name="omnipod_dash_scan_failed">Impossible de trouver un pod disponible pour l\'activation</string>
+    <!-- Community patch: ajout du conseil de redemarrage -->
+    <string name="omnipod_dash_scan_failed">Impossible de trouver un pod disponible pour l\'activation\n\nSi le pod a bien émis ses deux bips après remplissage, il fonctionne : le scan Bluetooth du téléphone est probablement bloqué. Redémarrez le téléphone, puis réessayez.</string>
     <string name="omnipod_dash_generic_error">Erreur générique : %1$s</string>
     <string name="omnipod_dash_failed_to_send">Échec d\'envoi de la commande</string>
     <string name="omnipod_dash_command_not_sent">Commande non envoyée</string>

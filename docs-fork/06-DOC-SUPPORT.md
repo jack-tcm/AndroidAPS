@@ -122,6 +122,30 @@ n'est pas utilisée.
 même code) → forcer l'arrêt de xDrip+ → **redémarrer le téléphone**.
 Le redémarrage est souvent le seul qui débloque vraiment.
 
+### Le scan Bluetooth se bloque — trois occurrences
+
+**Motif commun.** La pile Bluetooth d'Android cesse de remonter les résultats
+de scan BLE. Le Bluetooth reste allumé, l'interface répond, aucune erreur
+n'est affichée — simplement « rien trouvé ».
+
+Trois manifestations rencontrées :
+
+| Symptôme | Contexte |
+|---|---|
+| xDrip+ perd le G6 | après un passage en mode avion |
+| AAPS ne reçoit plus les glycémies | après manipulation des apps CGM |
+| « Impossible de trouver un pod disponible » | activation d'un pod neuf |
+
+**Résolution dans les trois cas : redémarrer le téléphone.** Basculer le
+Bluetooth ne suffit pas toujours.
+
+**Réflexe.** Dès qu'un appareil Bluetooth n'est plus trouvé alors que rien
+n'a changé, redémarrer avant de chercher plus loin — deux minutes contre une
+demi-heure de diagnostic. D'autant plus lors d'un changement de pod, où l'on
+est sans basale pendant la recherche.
+
+Le message d'erreur d'activation du pod a été complété dans ce sens.
+
 ### Fausses hypoglycémies nocturnes (compression)
 
 Dormir sur le bras porteur écrase le capteur et fait chuter la lecture.
@@ -174,6 +198,34 @@ l'algorithme : glucides actifs, glucides dans les 6 h, cible temporaire.
 **À retenir.** Un indicateur qui lit une préférence isolée ne dit rien de
 l'état réel du système. Les cinq sous-options SMB ne sont pas
 interchangeables.
+
+### Les SMB restent coupés indéfiniment après une règle hypo
+
+**Cause.** Version initiale du retour automatique : une seule échéance pour
+les deux cibles. Si une règle avait déjà un retour en attente, une seconde
+règle modifiait bien son option mais n'armait aucun retour — sa modification
+n'était donc jamais annulée.
+
+Scénario type : règle de l'aube active de 06:30 à 09:30 sur « SMB toujours »,
+règle hypo à 07:00 sur le maître. À 09:30, seul « SMB toujours » est
+restauré ; le maître reste coupé.
+
+**Résolution.** Suivi par cible, chacune avec ses propres clés.
+
+**Détection.** L'indicateur SMB reste gris en permanence alors que le
+contexte devrait l'allumer. C'est le signe à surveiller.
+
+### La cible SMB repasse sur « interrupteur maître » après une réinstallation
+
+**Cause.** L'état de la cible était dérivé du libellé traduit affiché par le
+menu déroulant. Si le remappage libellé → enum échouait, la valeur retombait
+sur MASTER, et le premier enregistrement figeait la perte.
+
+**Résolution.** Un champ dédié est devenu la source de vérité ; il n'est mis
+à jour que lorsqu'un libellé correspond réellement.
+
+**Vérification.** Après installation d'un APK, ouvrir la règle et contrôler
+que le résumé affiche bien « SMB toujours : ACTIVÉ pendant N min ».
 
 ### La règle se redéclenche toutes les 5 minutes
 

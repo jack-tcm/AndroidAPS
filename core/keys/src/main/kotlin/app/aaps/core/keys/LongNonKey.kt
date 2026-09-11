@@ -14,8 +14,11 @@ enum class LongNonKey(
     LastCleanupRun("last_cleanup_run", 0L),
 
     // Community patch — retour automatique de l'action Automation
-    // « Changer SMB » quand une durée est renseignée.
-    // 0 = aucun retour programmé.
-    AutomationSmbRevertAt("automation_smb_revert_at", 0L),
+    // « Changer SMB » quand une durée est renseignée. 0 = aucun retour.
+    // Une échéance par cible : deux règles visant des options différentes
+    // (ex. l'aube sur « SMB toujours », une règle hypo sur le maître)
+    // doivent pouvoir être en attente simultanément sans s'écraser.
+    AutomationSmbRevertAtMaster("automation_smb_revert_at", 0L),
+    AutomationSmbRevertAtAlways("automation_smb_revert_at_always", 0L),
 }
 

@@ -30,7 +30,8 @@
     <!-- Exceptions -->
     <string name="omnipod_dash_failed_to_connect">Failed to connect to pod</string>
     <string name="omnipod_dash_found_too_many_pods">Found too many pods for activation</string>
-    <string name="omnipod_dash_scan_failed">Could not find an available pod for activation</string>
+    <!-- Community patch: hint added, the Android BLE stack silently stops scanning after a Bluetooth state change -->
+    <string name="omnipod_dash_scan_failed">Could not find an available pod for activation\n\nIf the pod beeped twice after filling, it is working: the phone Bluetooth scan is most likely stuck. Restart the phone, then try again.</string>
     <string name="omnipod_dash_generic_error">Generic error: %1$s</string>
     <string name="omnipod_dash_failed_to_send">Failed to send the command</string>
     <string name="omnipod_dash_command_not_sent">Command not sent</string>
